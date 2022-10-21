@@ -5,26 +5,39 @@
 //  Created by Byron Mejia on 10/19/22.
 //
 
-import Foundation
+import UIKit
 import Combine
 
 let APIKEY = "ac3f2804a9f15f289b61366bb07cf6b4"
 
+enum MoviesType: String {
+    case popular = "popular"
+    case upcoming = "upcoming"
+    case nowPlaying = "now_playing"
+    case topRated = "top_rated"
+}
+
 protocol LoginStore {
-    func createToken() -> Future<AutResponse, Failure>
-    func createLogin(username: String, password: String, token: String) -> Future<AutResponse, Failure>
+    func createToken() -> Future<TokenResponse, Failure>
+    func login(username: String, password: String, token: String) -> Future<TokenResponse, Failure>
+    func createSession(requestToken: String) -> Future<CreateSessionResponse, Failure>
+    func getAccountDetails(sessionId: String) -> Future<ProfileResponse, Failure>
+}
+
+protocol movieListStore {
+    func getMoviesList(for moviesType: String, with offset: Int ) -> Future<PaginatedResponse<Movie>, Failure>
 }
 
 final class APIManager {
-
-    private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod) -> Future<T, Failure> where T : Codable {
+    
+    private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, Failure> where T : Codable {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "api.themoviedb.org"
-        components.path = path
+        components.path = "/3/\(path)"
         components.queryItems = [
-           URLQueryItem(name: "api_key", value: APIKEY),
-           URLQueryItem(name: "language", value: Locale.preferredLanguages.first)
+            URLQueryItem(name: "api_key", value: APIKEY),
+            URLQueryItem(name: "language", value: Locale.preferredLanguages.first)
         ]
         
         if let params = queryItems {
@@ -56,18 +69,54 @@ final class APIManager {
             task.resume()
         }
     }
+    
+    static func fetchImage(imageURL: String) async throws -> UIImage {
+        guard let url = URL(string: imageURL) else { throw Failure.urlConstructError }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            guard
+                let statusCode = (response as? HTTPURLResponse)?.statusCode,
+                let image = UIImage(data: data), 200...299 ~= statusCode else { throw Failure.statusCode }
+            return image
+            
+        } catch {
+            throw error
+        }
+    }
 }
 
 extension APIManager: LoginStore {
-    func createToken() -> Future<AutResponse, Failure> {
-        request(for: "/3/authentication/token/new", httpMethod: .get)
+    
+    func createToken() -> Future<TokenResponse, Failure> {
+        request(for: "authentication/token/new")
     }
     
-    func createLogin(username: String, password: String, token: String) -> Future<AutResponse, Failure> {
-        let path = "/3/authentication/token/validate_with_login"
+    func login(username: String, password: String, token: String) -> Future<TokenResponse, Failure> {
+        let path = "authentication/token/validate_with_login"
         let queryItems = [URLQueryItem(name: "username", value: username),
                           URLQueryItem(name: "password", value: password),
                           URLQueryItem(name: "request_token", value: token)]
         return request(for: path, with: queryItems, httpMethod: .post)
+    }
+    
+    func createSession(requestToken: String) -> Future<CreateSessionResponse, Failure> {
+        let queryItems = [URLQueryItem(name: "request_token", value: requestToken)]
+        let path = "authentication/session/new"
+        return request(for: path, with: queryItems, httpMethod: .post)
+    }
+    
+    func getAccountDetails(sessionId: String) -> Future<ProfileResponse, Failure> {
+        let queryItems = [URLQueryItem(name: "session_id", value: sessionId)]
+        return request(for: "account", with: queryItems)
+    }
+}
+
+extension APIManager: movieListStore {
+    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, Failure> {
+        let path = "movie/\(moviesType)"
+        let queryItems = [URLQueryItem(name: "page", value: "\(offset)")]
+        return request(for: path, with: queryItems)
     }
 }
