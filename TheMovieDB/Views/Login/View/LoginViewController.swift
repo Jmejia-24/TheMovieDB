@@ -58,7 +58,10 @@ final class LoginViewController: UIViewController {
             if !errorLabel.isHidden {
                 errorLabel.isHidden = true
             }
+            
             activityIndicator.startAnimating()
+            
+            clearTextField()
             viewModel.fetchLogin(user: userName, password: password)
             
         }
@@ -67,6 +70,11 @@ final class LoginViewController: UIViewController {
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
+    
+    private func clearTextField() {
+        passwordTextField.text = ""
+        userNameTextField.text = ""
+    }
     
     private lazy var errorLabel: UILabel = {
         let label = UILabel()
@@ -97,7 +105,6 @@ final class LoginViewController: UIViewController {
     init(viewModel: LoginViewModelRepresentable) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
-        
     }
     
     required init?(coder: NSCoder) {
@@ -108,6 +115,13 @@ final class LoginViewController: UIViewController {
         super.viewDidLoad()
         setUI()
         bindUI()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        if activityIndicator.isAnimating {
+            activityIndicator.stopAnimating()
+        }
     }
     
     private func setUI() {
@@ -122,19 +136,16 @@ final class LoginViewController: UIViewController {
         subscription = viewModel.loginSubject.sink { [unowned self] completion in
             switch completion {
             case .finished:
+                print("Finish")
                 break
             case .failure(let error):
                 DispatchQueue.main.async {
-                    self.activityIndicator.stopAnimating()
                     self.showError(errorMessage: error.localizedDescription)
+                    self.activityIndicator.stopAnimating()
                 }
-                
             }
         } receiveValue: { [unowned self] response in
-            DispatchQueue.main.async {
-                self.activityIndicator.stopAnimating()
-            }
-            print(response.success)
+            viewModel.goToMainScreen()
         }
     }
     

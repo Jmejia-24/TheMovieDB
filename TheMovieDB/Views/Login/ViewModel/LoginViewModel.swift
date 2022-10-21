@@ -11,6 +11,7 @@ import Combine
 protocol LoginViewModelRepresentable {
     func fetchToken()
     func fetchLogin(user: String, password: String)
+    func goToMainScreen()
     var loginSubject: PassthroughSubject<TokenResponse, Failure> { get }
 }
 
@@ -22,8 +23,6 @@ final class LoginViewModel<R: AppRouter> {
     
     private let store: LoginStore
     
-    private var createSessionResponse: CreateSessionResponse?
-    private var profileResponse: ProfileResponse?
     private var tokenResponse: TokenResponse?
     
     private var isAuthenticationAccepted: Bool {
@@ -38,7 +37,7 @@ final class LoginViewModel<R: AppRouter> {
         AuthorizationDataManager.shared.saveAuthorizationSession(sessionId: sessionId)
     }
     
-    func saveAuthorizationProfile(model: ProfileResponse) {
+    func saveAuthorizationProfile(model: Profile) {
         AuthorizationDataManager.shared.saveAuthorizationProfile(model: model)
     }
 }
@@ -62,7 +61,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             case .finished:
                 break
             case .failure(let failure):
-                self.loginSubject.send(completion: .failure(failure))
+                print(failure.localizedDescription)
             }
         }
         
@@ -81,6 +80,8 @@ extension LoginViewModel: LoginViewModelRepresentable {
         let recievedData = { [unowned self] (response: TokenResponse) -> Void in
             DispatchQueue.main.async {
                 self.tokenResponse = response
+                self.loginSubject.send(response)
+                self.fetchSession()
             }
         }
         
@@ -104,19 +105,19 @@ extension LoginViewModel: LoginViewModelRepresentable {
         
         let recievedData = { [unowned self] (response: CreateSessionResponse) -> Void in
             DispatchQueue.main.async {
-                self.createSessionResponse = response
                 guard let sessionId = response.sessionID else { return }
                 
                 self.saveSessionId(sessionId: sessionId)
+                self.fetchAccountDetails()
             }
         }
         
-        let completion = { [unowned self] (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { (completion: Subscribers.Completion<Failure>) -> Void in
             switch  completion {
             case .finished:
                 break
             case .failure(let failure):
-                loginSubject.send(completion: .failure(failure))
+                print(failure.localizedDescription)
             }
         }
         
@@ -127,21 +128,20 @@ extension LoginViewModel: LoginViewModelRepresentable {
     
     func fetchAccountDetails() {
         cancellables.removeAll()
-        guard let sessionId = AuthorizationDataManager.shared.getAuthorizationSession() else { return }
+        guard let sessionId = AuthorizationDataManager.shared.getAuthorizationSession else { return }
         
-        let recievedAccountDetails = { [unowned self] (response: ProfileResponse) -> Void in
+        let recievedAccountDetails = { [unowned self] (response: Profile) -> Void in
             DispatchQueue.main.async {
-                self.profileResponse = response
                 self.saveAuthorizationProfile(model: response)
             }
         }
         
-        let completion = { [unowned self] (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { (completion: Subscribers.Completion<Failure>) -> Void in
             switch  completion {
             case .finished:
                 break
             case .failure(let failure):
-                loginSubject.send(completion: .failure(failure))
+                print(failure.localizedDescription)
             }
         }
         

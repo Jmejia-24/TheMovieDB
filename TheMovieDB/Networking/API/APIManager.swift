@@ -21,11 +21,15 @@ protocol LoginStore {
     func createToken() -> Future<TokenResponse, Failure>
     func login(username: String, password: String, token: String) -> Future<TokenResponse, Failure>
     func createSession(requestToken: String) -> Future<CreateSessionResponse, Failure>
-    func getAccountDetails(sessionId: String) -> Future<ProfileResponse, Failure>
+    func getAccountDetails(sessionId: String) -> Future<Profile, Failure>
 }
 
-protocol movieListStore {
-    func getMoviesList(for moviesType: String, with offset: Int ) -> Future<PaginatedResponse<Movie>, Failure>
+protocol MovieListStore {
+    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, Failure>
+}
+
+protocol MovieDetailStore {
+    func getMovieDetail(for movieId: Int) -> Future<Movie, Failure>
 }
 
 final class APIManager {
@@ -107,16 +111,23 @@ extension APIManager: LoginStore {
         return request(for: path, with: queryItems, httpMethod: .post)
     }
     
-    func getAccountDetails(sessionId: String) -> Future<ProfileResponse, Failure> {
+    func getAccountDetails(sessionId: String) -> Future<Profile, Failure> {
         let queryItems = [URLQueryItem(name: "session_id", value: sessionId)]
         return request(for: "account", with: queryItems)
     }
 }
 
-extension APIManager: movieListStore {
+extension APIManager: MovieListStore {
     func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, Failure> {
         let path = "movie/\(moviesType)"
         let queryItems = [URLQueryItem(name: "page", value: "\(offset)")]
         return request(for: path, with: queryItems)
+    }
+}
+
+extension APIManager: MovieDetailStore {
+    func getMovieDetail(for movieId: Int) -> Future<Movie, Failure> {
+        let path = "movie/\(movieId)"
+        return request(for: path)
     }
 }

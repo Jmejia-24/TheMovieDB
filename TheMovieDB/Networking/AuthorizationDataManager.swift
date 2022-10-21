@@ -9,9 +9,9 @@ import Foundation
 
 protocol AuthorizationDataManagerType {
     func saveAuthorizationSession(sessionId: String)
-    func getAuthorizationSession() -> String?
-    func saveAuthorizationProfile(model: ProfileResponse)
-    func getAuthorizationProfile() -> ProfileResponse?
+    var getAuthorizationSession: String? { get }
+    func saveAuthorizationProfile(model: Profile)
+    var getAuthorizationProfile: Profile? { get }
     func clearAuthorization()
 }
 
@@ -28,14 +28,14 @@ final class AuthorizationDataManager: AuthorizationDataManagerType {
         }
     }
     
-    func getAuthorizationSession() -> String? {
+    var getAuthorizationSession: String? {
         do {
             let sessionId = userDefaults.object(forKey: sessionIdKey)
             return sessionId as? String
         }
     }
     
-    func saveAuthorizationProfile(model: ProfileResponse) {
+    func saveAuthorizationProfile(model: Profile) {
         do {
             try userDefaults.setObject(model, forKey: profileModelKey)
         } catch {
@@ -43,9 +43,9 @@ final class AuthorizationDataManager: AuthorizationDataManagerType {
         }
     }
     
-    func getAuthorizationProfile() -> ProfileResponse? {
+    var getAuthorizationProfile: Profile? {
         do {
-            let model = try userDefaults.getObject(forKey: profileModelKey, castTo: ProfileResponse.self)
+            let model = try userDefaults.getObject(forKey: profileModelKey, castTo: Profile.self)
             return model
         } catch {
             print(error.localizedDescription)

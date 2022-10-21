@@ -23,7 +23,7 @@ final class MovieListViewModel<R: AppRouter> {
     let movieListSubject = PassthroughSubject<[Movie], Failure>()
     
     private var cancellables = Set<AnyCancellable>()
-    private let store: movieListStore
+    private let store: MovieListStore
     
     var moviesType = MoviesType.popular
     
@@ -33,7 +33,7 @@ final class MovieListViewModel<R: AppRouter> {
         }
     }
     
-    init(store: movieListStore = APIManager()) {
+    init(store: MovieListStore = APIManager()) {
         self.store = store
     }
 }
@@ -78,6 +78,6 @@ extension MovieListViewModel: ListViewModelRepresentable {
     }
     
     func goToProfile() {
-        // TODO:
+        router?.process(route: .showProfile)
     }
 }

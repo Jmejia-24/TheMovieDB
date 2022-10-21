@@ -14,7 +14,7 @@ final class App {
 
 extension App: Coordinator {
     func start() {
-        process(route: .showLogin)
+        process(route: .showMainScreen)
     }
 }
 
@@ -24,7 +24,6 @@ extension App: AppRouter {
         /// In this Router context - the only exit left is the main screen.
         /// Logout - clean tokens - local cache - offline database if needed etc.
         navigationController.popToRootViewController(animated: true)
-        process(route: .showLogin)
     }
     
     func process(route: AppTransition) {

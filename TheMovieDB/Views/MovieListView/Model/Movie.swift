@@ -11,14 +11,11 @@ struct Movie: Codable, Identifiable {
     let id = UUID().uuidString
     let identifier: Int
     let overview: String
-    let posterPath: String
+    let posterPath: String?
     let releaseDate: String
     let title: String
     let voteAverage: Double
-    
-    var releaseFormatterDate: Date {
-        Self.dateFormatter.date(from: releaseDate) ?? Date()
-    }
+    let productionCompanies: [ProductionCompany]?
     
     enum CodingKeys: String, CodingKey {
         case identifier = "id"
@@ -27,14 +24,8 @@ struct Movie: Codable, Identifiable {
         case releaseDate = "release_date"
         case title
         case voteAverage = "vote_average"
+        case productionCompanies = "production_companies"
     }
-    
-    static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter
-    }()
 }
 
 extension Movie: Hashable {

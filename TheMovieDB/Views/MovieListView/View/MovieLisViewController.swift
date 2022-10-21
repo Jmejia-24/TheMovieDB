@@ -34,7 +34,7 @@ final class MovieLisViewController: UICollectionViewController {
             
             let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
             let item = NSCollectionLayoutItem(layoutSize: itemSize)
-            item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0)
+            item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
             
             let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                    heightDimension: .absolute(390))
@@ -57,15 +57,16 @@ final class MovieLisViewController: UICollectionViewController {
     // MARK: - Private methods
     
     private func setUI() {
+        navigationItem.setHidesBackButton(true, animated: false)
         view.backgroundColor = .white
-        title = "TV Shows"
-        
+        title = "Movies"
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "gear"),
             primaryAction: UIAction { [unowned self] _ in
                 showSettingOptions()
             })
         
+        collectionView.showsVerticalScrollIndicator = false
         viewModel.fetchMovies(1)
         collectionView.prefetchDataSource = self
     }
