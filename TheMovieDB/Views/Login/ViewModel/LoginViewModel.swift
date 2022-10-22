@@ -12,14 +12,14 @@ protocol LoginViewModelRepresentable {
     func fetchToken()
     func fetchLogin(user: String, password: String)
     func goToMainScreen()
-    var loginSubject: PassthroughSubject<TokenResponse, Failure> { get }
+    var loginSubject: PassthroughSubject<TokenResponse, APIError> { get }
 }
 
 final class LoginViewModel<R: AppRouter> {
     var router: R?
     
     private var cancellables = Set<AnyCancellable>()
-    let loginSubject = PassthroughSubject<TokenResponse, Failure>()
+    let loginSubject = PassthroughSubject<TokenResponse, APIError>()
     
     private let store: LoginStore
     
@@ -56,7 +56,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             }
         }
         
-        let completion = { (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
             switch  completion {
             case .finished:
                 break
@@ -71,7 +71,6 @@ extension LoginViewModel: LoginViewModelRepresentable {
     }
     
     func fetchLogin(user: String, password: String) {
-        cancellables.removeAll()
         guard let requestToken = tokenResponse?.requestToken else { return }
         
         UserDefaultsManager.shared.username = user
@@ -85,7 +84,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             }
         }
         
-        let completion = { [unowned self] (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { [unowned self] (completion: Subscribers.Completion<APIError>) -> Void in
             switch  completion {
             case .finished:
                 break
@@ -112,7 +111,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             }
         }
         
-        let completion = { (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
             switch  completion {
             case .finished:
                 break
@@ -136,7 +135,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             }
         }
         
-        let completion = { (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
             switch  completion {
             case .finished:
                 break

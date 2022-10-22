@@ -10,7 +10,7 @@ import Combine
 
 let APIKEY = "ac3f2804a9f15f289b61366bb07cf6b4"
 
-enum MoviesType: String {
+enum MovieType: String, CaseIterable {
     case popular = "popular"
     case upcoming = "upcoming"
     case nowPlaying = "now_playing"
@@ -18,23 +18,23 @@ enum MoviesType: String {
 }
 
 protocol LoginStore {
-    func createToken() -> Future<TokenResponse, Failure>
-    func login(username: String, password: String, token: String) -> Future<TokenResponse, Failure>
-    func createSession(requestToken: String) -> Future<CreateSessionResponse, Failure>
-    func getAccountDetails(sessionId: String) -> Future<Profile, Failure>
+    func createToken() -> Future<TokenResponse, APIError>
+    func login(username: String, password: String, token: String) -> Future<TokenResponse, APIError>
+    func createSession(requestToken: String) -> Future<CreateSessionResponse, APIError>
+    func getAccountDetails(sessionId: String) -> Future<Profile, APIError>
 }
 
 protocol MovieListStore {
-    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, Failure>
+    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, APIError>
 }
 
 protocol MovieDetailStore {
-    func getMovieDetail(for movieId: Int) -> Future<Movie, Failure>
+    func getMovieDetail(for movieId: Int) -> Future<Movie, APIError>
 }
 
 final class APIManager {
     
-    private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, Failure> where T : Codable {
+    private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, APIError> where T : Codable {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "api.themoviedb.org"
@@ -52,13 +52,13 @@ final class APIManager {
         
         return Future { promise in
             
-            guard let url = components.url else { return promise(.failure(.urlConstructError)) }
+            guard let url = components.url else { return promise(.failure(genericError)) }
             
             var request = URLRequest(url: url)
             request.httpMethod = httpMethod.rawValue
             
-            let task = URLSession.shared.dataTask(with: request) { data, _, error in
-                guard let data = data, case .none = error else { return promise(.failure(.urlConstructError)) }
+            let task = URLSession.shared.dataTask(with: request) { data, response, error in
+                guard let data = data, case .none = error else { return promise(.failure(genericError)) }
                 
                 do {
                     let decoder = JSONDecoder()
@@ -66,7 +66,7 @@ final class APIManager {
                     promise(.success(searchResponse))
                     
                 } catch {
-                    promise(.failure(.APIError(error)))
+                    promise(.failure(.handleError(dataResponse: response as! HTTPURLResponse, data: data)))
                 }
             }
             
@@ -75,14 +75,14 @@ final class APIManager {
     }
     
     static func fetchImage(imageURL: String) async throws -> UIImage {
-        guard let url = URL(string: imageURL) else { throw Failure.urlConstructError }
+        guard let url = URL(string: imageURL) else { throw genericError }
         
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
             
             guard
                 let statusCode = (response as? HTTPURLResponse)?.statusCode,
-                let image = UIImage(data: data), 200...299 ~= statusCode else { throw Failure.statusCode }
+                let image = UIImage(data: data), 200...299 ~= statusCode else { throw genericError }
             return image
             
         } catch {
@@ -93,11 +93,11 @@ final class APIManager {
 
 extension APIManager: LoginStore {
     
-    func createToken() -> Future<TokenResponse, Failure> {
+    func createToken() -> Future<TokenResponse, APIError> {
         request(for: "authentication/token/new")
     }
     
-    func login(username: String, password: String, token: String) -> Future<TokenResponse, Failure> {
+    func login(username: String, password: String, token: String) -> Future<TokenResponse, APIError> {
         let path = "authentication/token/validate_with_login"
         let queryItems = [URLQueryItem(name: "username", value: username),
                           URLQueryItem(name: "password", value: password),
@@ -105,20 +105,20 @@ extension APIManager: LoginStore {
         return request(for: path, with: queryItems, httpMethod: .post)
     }
     
-    func createSession(requestToken: String) -> Future<CreateSessionResponse, Failure> {
+    func createSession(requestToken: String) -> Future<CreateSessionResponse, APIError> {
         let queryItems = [URLQueryItem(name: "request_token", value: requestToken)]
         let path = "authentication/session/new"
         return request(for: path, with: queryItems, httpMethod: .post)
     }
     
-    func getAccountDetails(sessionId: String) -> Future<Profile, Failure> {
+    func getAccountDetails(sessionId: String) -> Future<Profile, APIError> {
         let queryItems = [URLQueryItem(name: "session_id", value: sessionId)]
         return request(for: "account", with: queryItems)
     }
 }
 
 extension APIManager: MovieListStore {
-    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, Failure> {
+    func getMoviesList(for moviesType: String, with offset: Int) -> Future<PaginatedResponse<Movie>, APIError> {
         let path = "movie/\(moviesType)"
         let queryItems = [URLQueryItem(name: "page", value: "\(offset)")]
         return request(for: path, with: queryItems)
@@ -126,7 +126,7 @@ extension APIManager: MovieListStore {
 }
 
 extension APIManager: MovieDetailStore {
-    func getMovieDetail(for movieId: Int) -> Future<Movie, Failure> {
+    func getMovieDetail(for movieId: Int) -> Future<Movie, APIError> {
         let path = "movie/\(movieId)"
         return request(for: path)
     }

@@ -52,7 +52,7 @@ final class LoginViewController: UIViewController {
                   let password = passwordTextField.text,
                   !userName.isEmpty,
                   !password.isEmpty else {
-                showError(errorMessage: "Campos obligatios")
+                showError(errorMessage: "Required fields")
                 return }
             
             if !errorLabel.isHidden {
@@ -136,12 +136,11 @@ final class LoginViewController: UIViewController {
         subscription = viewModel.loginSubject.sink { [unowned self] completion in
             switch completion {
             case .finished:
-                print("Finish")
                 break
             case .failure(let error):
-                DispatchQueue.main.async {
-                    self.showError(errorMessage: error.localizedDescription)
-                    self.activityIndicator.stopAnimating()
+                DispatchQueue.main.async { [unowned self] in
+                    activityIndicator.stopAnimating()
+                    showError(errorMessage: error.message)
                 }
             }
         } receiveValue: { [unowned self] response in

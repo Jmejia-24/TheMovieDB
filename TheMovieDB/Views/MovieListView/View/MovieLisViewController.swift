@@ -17,7 +17,9 @@ final class MovieLisViewController: UICollectionViewController {
     private typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Movie>
     
     private var subscription: AnyCancellable?
-    private let viewModel: ListViewModelRepresentable
+    private var segmentedControlSubscription: AnyCancellable?
+    
+    private var viewModel: ListViewModelRepresentable
     private var searchController = UISearchController(searchResultsController: nil)
     
     init(viewModel: ListViewModelRepresentable) {
@@ -32,7 +34,12 @@ final class MovieLisViewController: UICollectionViewController {
     static private func generateLayout() -> UICollectionViewLayout {
         let layout = UICollectionViewCompositionalLayout { (sectionIndex: Int, layoutEnvironment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection? in
             
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(50))
+            
+            let headerElement = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize, elementKind: UICollectionView.elementKindSectionHeader, alignment: .top)
+            
             let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
+            
             let item = NSCollectionLayoutItem(layoutSize: itemSize)
             item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
             
@@ -41,8 +48,10 @@ final class MovieLisViewController: UICollectionViewController {
             
             let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 2)
             
-            let section = NSCollectionLayoutSection(group: group)
+            headerElement.pinToVisibleBounds = true
             
+            let section = NSCollectionLayoutSection(group: group)
+            section.boundarySupplementaryItems = [headerElement]
             return section
         }
         return layout
@@ -52,23 +61,45 @@ final class MovieLisViewController: UICollectionViewController {
         super.viewDidLoad()
         setUI()
         bindUI()
+        configureCollectionView()
     }
     
     // MARK: - Private methods
+    
+    private func configureCollectionView() {
+        
+        collectionView.register(header: SegmentedControlHeaderView.self)
+        
+        dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
+            
+            guard let header = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader,
+                                                                               withReuseIdentifier: SegmentedControlHeaderView.reuseIdentifier,
+                                                                               for: indexPath) as? SegmentedControlHeaderView
+            else { fatalError("Cannot create header view") }
+            
+            self.segmentedControlSubscription = header.movieTypelSubject.sink { _ in
+            } receiveValue: { [unowned self] listType in
+                viewModel.currentListMovie = listType
+            }
+            return header
+        }
+    }
     
     private func setUI() {
         navigationItem.setHidesBackButton(true, animated: false)
         view.backgroundColor = .white
         title = "Movies"
+        
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "gear"),
             primaryAction: UIAction { [unowned self] _ in
                 showSettingOptions()
             })
         
+        collectionView.bounces = false
         collectionView.showsVerticalScrollIndicator = false
-        viewModel.fetchMovies(1)
         collectionView.prefetchDataSource = self
+        viewModel.fetchMovies(isPrefetch: false, offset: 1)
     }
     
     private func bindUI() {
@@ -77,9 +108,10 @@ final class MovieLisViewController: UICollectionViewController {
             case .finished:
                 print("Received completion in VC", completion)
             case .failure(let error):
-                presentAlert(with: error)
+                presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
             }
         } receiveValue: { [unowned self] movies in
+            collectionView.scrollsToTop = true
             applySnapshot(movies: movies)
         }
     }

@@ -11,21 +11,25 @@ import Combine
 protocol ListViewModelRepresentable {
     func prefetchData(for indexPaths: [IndexPath])
     func didTapItem(model: Movie)
-    func fetchMovies(_ offset: Int)
+    func fetchMovies(isPrefetch: Bool, offset: Int)
     func logOut()
     func goToProfile()
-    var moviesType: MoviesType { get set }
-    var movieListSubject: PassthroughSubject<[Movie], Failure> { get }
+    var currentListMovie: MovieType { get set }
+    var movieListSubject: CurrentValueSubject<[Movie], APIError> { get }
 }
 
 final class MovieListViewModel<R: AppRouter> {
     var router: R?
-    let movieListSubject = PassthroughSubject<[Movie], Failure>()
+    let movieListSubject = CurrentValueSubject<[Movie], APIError>([])
     
     private var cancellables = Set<AnyCancellable>()
     private let store: MovieListStore
     
-    var moviesType = MoviesType.popular
+    var currentListMovie = MovieType.popular {
+        didSet {
+            fetchMovies(isPrefetch: false, offset: 1)
+        }
+    }
     
     private var fetchedMovies = [Movie]() {
         didSet {
@@ -44,22 +48,27 @@ extension MovieListViewModel: ListViewModelRepresentable {
 
         let movieAlreadyLoaded = fetchedMovies.count
         if index > movieAlreadyLoaded - 10 {
-            fetchMovies(movieAlreadyLoaded)
+            fetchMovies(offset: movieAlreadyLoaded)
         }
     }
     
     func didTapItem(model: Movie) {
-        
+        router?.process(route: .showDetail(model: model))
     }
     
-    func fetchMovies(_ offset: Int) {
-        let recievedMovies = { [unowned self] (response: PaginatedResponse<Movie>) -> Void in
-            DispatchQueue.main.async {
-                self.fetchedMovies.append(contentsOf: response.results)
+    func fetchMovies(isPrefetch: Bool = true, offset: Int) {
+        let recievedMovies = { (response: PaginatedResponse<Movie>) -> Void in
+            DispatchQueue.main.async { [unowned self] in
+                
+                if !isPrefetch {
+                    fetchedMovies.removeAll()
+                }
+                
+                fetchedMovies.append(contentsOf: response.results)
             }
         }
         
-        let completion = { [unowned self] (completion: Subscribers.Completion<Failure>) -> Void in
+        let completion = { [unowned self] (completion: Subscribers.Completion<APIError>) -> Void in
             switch  completion {
             case .finished:
                 break
@@ -68,7 +77,7 @@ extension MovieListViewModel: ListViewModelRepresentable {
             }
         }
         
-        store.getMoviesList(for: moviesType.rawValue, with: offset)
+        store.getMoviesList(for: currentListMovie.rawValue, with: offset)
             .sink(receiveCompletion: completion, receiveValue: recievedMovies)
             .store(in: &cancellables)
     }

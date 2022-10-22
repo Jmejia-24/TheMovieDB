@@ -11,13 +11,13 @@ import Combine
 protocol ProfileViewModelRepresentable {
     func getAccountDetails()
     var profileItem: Profile? { get }
-    var favoritesSubject: PassthroughSubject<[Movie], Failure> { get }
+    var favoritesSubject: PassthroughSubject<[Movie], APIError> { get }
 }
 
 final class ProfileViewModel<R: AppRouter> {
     weak var router: R?
     
-    let favoritesSubject = PassthroughSubject<[Movie], Failure>()
+    let favoritesSubject = PassthroughSubject<[Movie], APIError>()
     var profileItem: Profile?
     
     private var cancellables = Set<AnyCancellable>()

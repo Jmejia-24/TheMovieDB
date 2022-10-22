@@ -30,8 +30,13 @@ final class ProfileViewController: UICollectionViewController {
         var configuration = cell.defaultContentConfiguration()
         configuration.text = profile.username
         
-        configuration.image = #imageLiteral(resourceName: "MoviePlaceholder")
-        configuration.imageProperties.cornerRadius = cell.contentView.frame.height / 2
+        Task {
+            let imageStringURL = profile.avatar?.gravatar?.hash ?? profile.avatar?.tmdb?.avatarPath
+            configuration.image = await ImageCacheStore.shared.getCacheImage(for: imageStringURL)
+            
+            configuration.imageProperties.cornerRadius = cell.contentView.frame.height / 2
+            cell.contentConfiguration = configuration
+        }
         
         cell.contentConfiguration = configuration
         cell.isSelected = false
@@ -69,7 +74,7 @@ final class ProfileViewController: UICollectionViewController {
             case .finished:
                 print("Received completion in VC", completion)
             case .failure(let error):
-                presentAlert(with: error)
+                presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
             }
         } receiveValue: { [unowned self] favorites in
             applySnapshot(favorites: favorites)
@@ -173,7 +178,7 @@ extension ProfileViewController {
 import UIKit
 
 final class HeaderView: UICollectionReusableView {
-    static let reuseIdentifier = "header-reuse-identifier"
+    static let reuseIdentifierr = "header-reuse-identifier"
     
     private var label: UILabel = {
         let label = UILabel()
