@@ -20,7 +20,6 @@ final class MovieLisViewController: UICollectionViewController {
     private var segmentedControlSubscription: AnyCancellable?
     
     private var viewModel: ListViewModelRepresentable
-    private var searchController = UISearchController(searchResultsController: nil)
     
     init(viewModel: ListViewModelRepresentable) {
         self.viewModel = viewModel
@@ -34,11 +33,15 @@ final class MovieLisViewController: UICollectionViewController {
     static private func generateLayout() -> UICollectionViewLayout {
         let layout = UICollectionViewCompositionalLayout { (sectionIndex: Int, layoutEnvironment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection? in
             
-            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(50))
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                    heightDimension: .absolute(50))
             
-            let headerElement = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize, elementKind: UICollectionView.elementKindSectionHeader, alignment: .top)
+            let headerElement = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize,
+                                                                            elementKind: UICollectionView.elementKindSectionHeader,
+                                                                            alignment: .top)
             
-            let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0))
+            let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                  heightDimension: .fractionalHeight(1.0))
             
             let item = NSCollectionLayoutItem(layoutSize: itemSize)
             item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
@@ -64,6 +67,10 @@ final class MovieLisViewController: UICollectionViewController {
         configureCollectionView()
     }
     
+    override func loadView() {
+        super.loadView()
+    }
+    
     // MARK: - Private methods
     
     private func configureCollectionView() {
@@ -85,20 +92,31 @@ final class MovieLisViewController: UICollectionViewController {
         }
     }
     
-    private func setUI() {
-        navigationItem.setHidesBackButton(true, animated: false)
-        view.backgroundColor = .white
-        title = "Movies"
-        
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+    private func setBarItem() {
+        let settingButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "gear"),
             primaryAction: UIAction { [unowned self] _ in
                 showSettingOptions()
             })
         
+        let favoriteButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "arrow.down.heart.fill"),
+            primaryAction: UIAction { [unowned self] _ in
+                viewModel.goToFavorite()
+            })
+        
+        navigationItem.rightBarButtonItems = [settingButtonItem, favoriteButtonItem]
+    }
+    
+    private func setUI() {
+        navigationItem.setHidesBackButton(true, animated: false)
+        view.backgroundColor = .white
+        title = "Movies"
+        
         collectionView.bounces = false
         collectionView.showsVerticalScrollIndicator = false
         collectionView.prefetchDataSource = self
+        setBarItem()
         viewModel.fetchMovies(isPrefetch: false, offset: 1)
     }
     
@@ -111,7 +129,6 @@ final class MovieLisViewController: UICollectionViewController {
                 presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
             }
         } receiveValue: { [unowned self] movies in
-            collectionView.scrollsToTop = true
             applySnapshot(movies: movies)
         }
     }
@@ -136,8 +153,7 @@ final class MovieLisViewController: UICollectionViewController {
     
     private lazy var dataSource: DataSource = { [unowned self] in
         let dataSource = DataSource(collectionView: collectionView) { collectionView, indexPath, item ->  UICollectionViewCell in
-            
-            return collectionView.dequeueConfiguredReusableCell(using: self.registerMovieCell, for: indexPath, item: item)
+            collectionView.dequeueConfiguredReusableCell(using: self.registerMovieCell, for: indexPath, item: item)
         }
         return dataSource
     }()

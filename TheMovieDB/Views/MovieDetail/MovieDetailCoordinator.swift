@@ -18,7 +18,7 @@ final class MovieDetailCoordinator<R: AppRouter> {
     }
     
     private lazy var primaryViewController: UIViewController = {
-        let viewModel = MovieDetailViewModel<R>(movie: model)
+        let viewModel = MovieDetailViewModel<R>(movie: model, service: Services(storage: MovieManager()))
         viewModel.router = router
         let viewController = MovieDetailViewController(viewModel: viewModel)
         return viewController

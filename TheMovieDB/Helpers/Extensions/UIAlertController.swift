@@ -69,7 +69,7 @@ extension UIAlertController {
 }
 
 extension UIViewController {
-    func presentErrorAlert(for errorCode: Int, with error: String) {
+    func presentErrorAlert(for errorCode: Int = 0, with error: String) {
         UIAlertController
             .Builder()
             .withTitle(NSLocalizedString("Error \(errorCode)", comment: "Error title shown in modal"))

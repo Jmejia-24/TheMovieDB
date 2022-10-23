@@ -32,6 +32,10 @@ protocol MovieDetailStore {
     func getMovieDetail(for movieId: Int) -> Future<Movie, APIError>
 }
 
+protocol ProfileStore {
+    func getMovieFavorite() -> Future<[Movie], APIError>
+}
+
 final class APIManager {
     
     private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, APIError> where T : Codable {
@@ -66,7 +70,8 @@ final class APIManager {
                     promise(.success(searchResponse))
                     
                 } catch {
-                    promise(.failure(.handleError(dataResponse: response as! HTTPURLResponse, data: data)))
+                    guard let response = response as? HTTPURLResponse else { return }
+                    promise(.failure(.handleError(dataResponse: response, data: data)))
                 }
             }
             
@@ -129,5 +134,11 @@ extension APIManager: MovieDetailStore {
     func getMovieDetail(for movieId: Int) -> Future<Movie, APIError> {
         let path = "movie/\(movieId)"
         return request(for: path)
+    }
+}
+
+extension APIManager: ProfileStore {
+    func getMovieFavorite() -> Future<[Movie], APIError> {
+        return request(for: "")
     }
 }

@@ -13,6 +13,7 @@ enum AppTransition {
     case showMainScreen
     case showProfile
     case showDetail(model: Movie)
+    case showFavorite
     
     var hasState: Bool {
         /// If some transitions need to have state - perform case match logic here
@@ -26,6 +27,7 @@ enum AppTransition {
         case .showMainScreen: return MovieListCoordinator(router: router)
         case .showProfile: return ProfileCoordinator(router: router)
         case .showDetail(let model): return MovieDetailCoordinator(model: model, router: router)
+        case .showFavorite: return FavoriteCoordinator(router: router)
         }
     }
 }
@@ -37,7 +39,8 @@ extension AppTransition: Hashable {
         case .showLogin: return "showLogin"
         case .showMainScreen: return "showMainScreen"
         case .showProfile: return "showProfile"
-        case .showDetail: return "showDextail"
+        case .showDetail: return "showDetail"
+        case .showFavorite: return "showFavorite"
         }
     }
     

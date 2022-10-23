@@ -112,4 +112,16 @@ final class MoviesViewCell: UICollectionViewCell {
             movieImageView.image = await ImageCacheStore.shared.getCacheImage(for: movie.posterPath)
         }
     }
+    
+    func configCell(movieObject: MovieObject) {
+        guard let movie = movieObject.movie else { return }
+        movieTitle.text = movie.title
+        dateLabel.text = movie.releaseDate.printFormattedDate()
+        ratingLabel.text =  "\u{2B50} \(movie.voteAverage) "
+        descriptionLabel.text = movie.overview
+        
+        Task {
+            movieImageView.image = await ImageCacheStore.shared.getCacheImage(for: movie.posterPath)
+        }
+    }
 }

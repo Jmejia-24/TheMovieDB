@@ -18,6 +18,15 @@ struct Movie: Codable, Identifiable {
     let voteAverage: Double
     let productionCompanies: [ProductionCompany]?
     
+    var isFavorite: Bool {
+        get {
+            UserDefaultsManager.shared.getIsMovieFavorite(forKey: "\(identifier)-favorite")
+        }
+        set {
+            UserDefaultsManager.shared.setIsMovieFavorite(value: newValue, forKey: "\(identifier)-favorite")
+        }
+    }
+    
     enum CodingKeys: String, CodingKey {
         case identifier = "id"
         case overview

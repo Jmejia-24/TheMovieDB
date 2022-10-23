@@ -10,8 +10,6 @@ import Combine
 
 final class MovieDetailViewController: UICollectionViewController {
     
-    static let sectionHeaderElementKind = "section-header-element-kind"
-    
     private enum Section: String, CaseIterable {
         case poster
         case info = "Info"
@@ -27,7 +25,7 @@ final class MovieDetailViewController: UICollectionViewController {
     private typealias DataSource = UICollectionViewDiffableDataSource<Section, Row>
     private typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Row>
     
-    private let viewModel: MovieDetailViewModelRepresentable
+    private var viewModel: MovieDetailViewModelRepresentable
     private var subscription: AnyCancellable?
     
     private let registerPosterCell = UICollectionView.CellRegistration<PosterHeaderCell, Movie> { cell, indexPath, movie in
@@ -71,16 +69,23 @@ final class MovieDetailViewController: UICollectionViewController {
         bindUI()
     }
     
+    lazy var favoriteButtonItem: UIBarButtonItem = {
+        return UIBarButtonItem (
+            image: UIImage(systemName: viewModel.movie.isFavorite ? "heart.fill" : "heart"),
+            primaryAction: UIAction { [unowned self] re in
+                viewModel.movie.isFavorite = true
+                favoriteButtonItem.isEnabled = !viewModel.movie.isFavorite
+                viewModel.saveToFavorite()
+            })
+    }()
+    
     private func setUI() {
         view.backgroundColor = .white
         title = "Details"
         collectionView.showsVerticalScrollIndicator = false
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "heart"),
-            primaryAction: UIAction { [unowned self] _ in
-                print("Test")
-            })
+        navigationItem.rightBarButtonItem = favoriteButtonItem
+        favoriteButtonItem.isEnabled = !viewModel.movie.isFavorite
         
         viewModel.fetchMovieDetail()
     }

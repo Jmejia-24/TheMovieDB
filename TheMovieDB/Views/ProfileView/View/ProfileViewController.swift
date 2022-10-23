@@ -8,7 +8,6 @@ import UIKit
 import Combine
 
 final class ProfileViewController: UICollectionViewController {
-    static let sectionHeaderElementKind = "section-header-element-kind"
     
     private enum Section: String, CaseIterable {
         case profile = "Profile"
@@ -31,7 +30,7 @@ final class ProfileViewController: UICollectionViewController {
         configuration.text = profile.username
         
         Task {
-            let imageStringURL = profile.avatar?.gravatar?.hash ?? profile.avatar?.tmdb?.avatarPath
+            let imageStringURL = profile.avatar?.tmdb?.avatarPath ?? profile.avatar?.gravatar?.hash
             configuration.image = await ImageCacheStore.shared.getCacheImage(for: imageStringURL)
             
             configuration.imageProperties.cornerRadius = cell.contentView.frame.height / 2
@@ -58,23 +57,27 @@ final class ProfileViewController: UICollectionViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setUI()
-        configureCollectionView()
         bindUI()
+        configureCollectionView()
     }
     
     private func setUI() {
-        view.backgroundColor = .white
+        collectionView.backgroundColor = .white
+        collectionView.bounces = false
+        collectionView.showsVerticalScrollIndicator = false
+        collectionView.prefetchDataSource = self
+        
         viewModel.getAccountDetails()
-        applySnapshot(favorites: [])
+        viewModel.loadFavoriteMovies(0)
     }
     
     private func bindUI() {
-        subscription = viewModel.favoritesSubject.sink { [unowned self] completion in
+        subscription = viewModel.favoritesSubject.sink { completion in
             switch completion {
             case .finished:
                 print("Received completion in VC", completion)
             case .failure(let error):
-                presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
+                print(error)
             }
         } receiveValue: { [unowned self] favorites in
             applySnapshot(favorites: favorites)
@@ -82,9 +85,7 @@ final class ProfileViewController: UICollectionViewController {
     }
     
     private func configureCollectionView() {
-        collectionView.register(HeaderView.self,
-                                forSupplementaryViewOfKind: Self.sectionHeaderElementKind,
-                                withReuseIdentifier: HeaderView.reuseIdentifier)
+        collectionView.register(header: HeaderView.self)
         
         dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
             
@@ -94,7 +95,7 @@ final class ProfileViewController: UICollectionViewController {
                 for: indexPath) as? HeaderView else { fatalError("Cannot create header view") }
             
             let sectionName = Section.allCases[indexPath.section].rawValue
-            supplementaryView.configCell(for: sectionName)
+            supplementaryView.config(for: sectionName)
             return supplementaryView
         }
     }
@@ -126,6 +127,12 @@ final class ProfileViewController: UICollectionViewController {
     }
 }
 
+extension ProfileViewController: UICollectionViewDataSourcePrefetching {
+    func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+        viewModel.prefetchData(for: indexPaths)
+    }
+}
+
 extension ProfileViewController {
     
     static private func generateLayout() -> UICollectionViewLayout {
@@ -134,7 +141,7 @@ extension ProfileViewController {
             let sectionLayoutKind = Section.allCases[sectionIndex]
             let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(44))
             let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize,
-                                                                            elementKind: Self.sectionHeaderElementKind,
+                                                                            elementKind: HeaderView.reuseIdentifier,
                                                                             alignment: .top)
             
             switch sectionLayoutKind {
@@ -152,16 +159,16 @@ extension ProfileViewController {
                 
                 return section
             case .favorite:
-                let itemSize = NSCollectionLayoutSize(
-                    widthDimension: .fractionalWidth(1.0),
-                    heightDimension: .fractionalWidth(1.0))
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
+                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                      heightDimension: .absolute(390))
                 
-                let groupSize = NSCollectionLayoutSize(
-                    widthDimension: .absolute(140),
-                    heightDimension: .absolute(100))
-                let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitem: item, count: 1)
-                group.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
+                let item = NSCollectionLayoutItem(layoutSize: itemSize)
+                item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
+                
+                let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                       heightDimension: .fractionalWidth(1.0))
+                
+                let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 2)
                 
                 let section = NSCollectionLayoutSection(group: group)
                 section.boundarySupplementaryItems = [sectionHeader]
@@ -171,49 +178,5 @@ extension ProfileViewController {
             }
         }
         return layout
-    }
-}
-
-
-import UIKit
-
-final class HeaderView: UICollectionReusableView {
-    static let reuseIdentifierr = "header-reuse-identifier"
-    
-    private var label: UILabel = {
-        let label = UILabel()
-        label.numberOfLines = 1
-        label.font = .preferredFont(forTextStyle: .title3)
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.adjustsFontForContentSizeCategory = true
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError()
-    }
-}
-
-extension HeaderView {
-    func setUI() {
-        backgroundColor = .systemBackground
-        addSubview(label)
-        
-        let inset = CGFloat(10)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: inset),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -inset),
-            label.topAnchor.constraint(equalTo: topAnchor, constant: inset),
-            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -inset)
-        ])
-    }
-    
-    func configCell(for text: String) {
-        label.text = text
     }
 }

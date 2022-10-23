@@ -51,4 +51,12 @@ public final class UserDefaultsManager: UserDefaultsManagerProtocol {
             defaults.set(value, forKey: StorageKey.password.rawValue)
         }
     }
+    
+    func setIsMovieFavorite(value: Bool, forKey: String) {
+        defaults.set(value, forKey: forKey)
+    }
+    
+    func getIsMovieFavorite(forKey: String) -> Bool {
+        defaults.bool(forKey: forKey)
+    }
 }

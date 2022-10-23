@@ -14,6 +14,7 @@ protocol ListViewModelRepresentable {
     func fetchMovies(isPrefetch: Bool, offset: Int)
     func logOut()
     func goToProfile()
+    func goToFavorite()
     var currentListMovie: MovieType { get set }
     var movieListSubject: CurrentValueSubject<[Movie], APIError> { get }
 }
@@ -88,5 +89,9 @@ extension MovieListViewModel: ListViewModelRepresentable {
     
     func goToProfile() {
         router?.process(route: .showProfile)
+    }
+    
+    func goToFavorite() {
+        router?.process(route: .showFavorite)
     }
 }
