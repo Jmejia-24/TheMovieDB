@@ -12,17 +12,18 @@ protocol LoginViewModelRepresentable {
     func fetchToken()
     func fetchLogin(user: String, password: String)
     func goToMainScreen()
-    var loginSubject: PassthroughSubject<TokenResponse, APIError> { get }
+    var loginSubject: PassthroughSubject<TokenResponse, Error> { get }
+    var errorSubject: PassthroughSubject<APIError, Error> { get }
 }
 
 final class LoginViewModel<R: AppRouter> {
     var router: R?
     
     private var cancellables = Set<AnyCancellable>()
-    let loginSubject = PassthroughSubject<TokenResponse, APIError>()
+    let loginSubject = PassthroughSubject<TokenResponse, Error>()
+    let errorSubject = PassthroughSubject<APIError, Error>()
     
     private let store: LoginStore
-    
     private var tokenResponse: TokenResponse?
     
     private var isAuthenticationAccepted: Bool {
@@ -33,54 +34,42 @@ final class LoginViewModel<R: AppRouter> {
         self.store = store
     }
     
-    func saveSessionId(sessionId: String) {
-        AuthorizationDataManager.shared.saveAuthorizationSession(sessionId: sessionId)
-    }
-    
-    func saveAuthorizationProfile(model: Profile) {
-        AuthorizationDataManager.shared.saveAuthorizationProfile(model: model)
-    }
 }
 
 extension LoginViewModel: LoginViewModelRepresentable {
     
     func fetchToken() {
         cancellables.removeAll()
-        let recievedData = { [unowned self] (response: TokenResponse) -> Void in
-            DispatchQueue.main.async {
-                self.tokenResponse = response
-                
-                if !self.isAuthenticationAccepted {
+        
+        let recievedData = { (response: TokenResponse) -> Void in
+            DispatchQueue.main.async { [unowned self] in
+                tokenResponse = response
+                if !isAuthenticationAccepted {
                     UserDefaultsManager.shared.isAuthenticationAccepted = true
                 }
             }
         }
         
-        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
-            switch  completion {
-            case .finished:
-                break
-            case .failure(let failure):
-                print(failure.localizedDescription)
-            }
-        }
-        
         store.createToken()
-            .sink(receiveCompletion: completion, receiveValue: recievedData)
+            .sink(receiveCompletion: { _ in }, receiveValue: recievedData)
             .store(in: &cancellables)
     }
     
     func fetchLogin(user: String, password: String) {
         guard let requestToken = tokenResponse?.requestToken else { return }
+        cancellables.removeAll()
         
         UserDefaultsManager.shared.username = user
         UserDefaultsManager.shared.password = password
         
-        let recievedData = { [unowned self] (response: TokenResponse) -> Void in
-            DispatchQueue.main.async {
-                self.tokenResponse = response
-                self.loginSubject.send(response)
-                self.fetchSession()
+        let recievedData = { (response: TokenResponse) -> Void in
+            DispatchQueue.main.async { [unowned self] in
+                tokenResponse = response
+                fetchSession()
+                loginSubject.send(response)
+                if response.success {
+                    goToMainScreen()
+                }
             }
         }
         
@@ -89,7 +78,7 @@ extension LoginViewModel: LoginViewModelRepresentable {
             case .finished:
                 break
             case .failure(let failure):
-                loginSubject.send(completion: .failure(failure))
+                errorSubject.send(failure)
             }
         }
         
@@ -99,53 +88,35 @@ extension LoginViewModel: LoginViewModelRepresentable {
     }
     
     func fetchSession() {
-        cancellables.removeAll()
         guard let requestToken = tokenResponse?.requestToken else { return }
+        cancellables.removeAll()
         
-        let recievedData = { [unowned self] (response: CreateSessionResponse) -> Void in
-            DispatchQueue.main.async {
+        let recievedData = { (response: CreateSessionResponse) -> Void in
+            DispatchQueue.main.async { [unowned self] in
                 guard let sessionId = response.sessionID else { return }
                 
-                self.saveSessionId(sessionId: sessionId)
-                self.fetchAccountDetails()
-            }
-        }
-        
-        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
-            switch  completion {
-            case .finished:
-                break
-            case .failure(let failure):
-                print(failure.localizedDescription)
+                AuthorizationDataManager.shared.saveAuthorizationSession(sessionId: sessionId)
+                fetchAccountDetails()
             }
         }
         
         store.createSession(requestToken: requestToken)
-            .sink(receiveCompletion: completion, receiveValue: recievedData)
+            .sink(receiveCompletion: { _ in }, receiveValue: recievedData)
             .store(in: &cancellables)
     }
     
     func fetchAccountDetails() {
-        cancellables.removeAll()
         guard let sessionId = AuthorizationDataManager.shared.getAuthorizationSession else { return }
+        cancellables.removeAll()
         
-        let recievedAccountDetails = { [unowned self] (response: Profile) -> Void in
+        let recievedAccountDetails = { (response: Profile) -> Void in
             DispatchQueue.main.async {
-                self.saveAuthorizationProfile(model: response)
-            }
-        }
-        
-        let completion = { (completion: Subscribers.Completion<APIError>) -> Void in
-            switch  completion {
-            case .finished:
-                break
-            case .failure(let failure):
-                print(failure.localizedDescription)
+                AuthorizationDataManager.shared.saveAuthorizationProfile(model: response)
             }
         }
         
         store.getAccountDetails(sessionId: sessionId)
-            .sink(receiveCompletion: completion, receiveValue: recievedAccountDetails)
+            .sink(receiveCompletion: { _ in }, receiveValue: recievedAccountDetails)
             .store(in: &cancellables)
     }
     

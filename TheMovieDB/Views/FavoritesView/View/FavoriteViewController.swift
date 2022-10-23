@@ -54,7 +54,6 @@ final class FavoriteViewController: UICollectionViewController {
     }
     
     private func setUI() {
-        collectionView.backgroundColor = .white
         title = "Favorites"
         
         collectionView.bounces = false
@@ -95,7 +94,10 @@ final class FavoriteViewController: UICollectionViewController {
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard let movie = dataSource.itemIdentifier(for: indexPath) else { return }
-        
+        didTapItem(movie)
+    }
+    
+    private func didTapItem(_ movie: MovieObject) {
         UIAlertController.Builder()
             .withTitle(movie.movie?.title)
             .withMessage("Do you want to remove this movie?")
@@ -104,7 +106,7 @@ final class FavoriteViewController: UICollectionViewController {
                 snapshot.deleteItems([movie])
                 dataSource.apply(snapshot)
                 
-                viewModel.deleteMovie(nsObject: movie.productNSManagedObject)
+                viewModel.deleteMovie(movie: movie)
             }
             .withButton(style: .cancel, title: "Cancel")
             .withAlertStyle(.actionSheet)

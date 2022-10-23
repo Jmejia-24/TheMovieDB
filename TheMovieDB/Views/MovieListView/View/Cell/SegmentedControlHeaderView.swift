@@ -13,7 +13,10 @@ class SegmentedControlHeaderView: UICollectionReusableView {
 
     private lazy var modeSegmentedControl: UISegmentedControl = {
         let control = UISegmentedControl()
-        control.backgroundColor = .secondarySystemBackground
+        control.backgroundColor = .backgroundView
+        control.selectedSegmentTintColor = .gray
+        control.setTitleTextAttributes([NSAttributedString.Key.foregroundColor: UIColor.white], for: .normal)
+        
         control.translatesAutoresizingMaskIntoConstraints = false
         control.insertSegment(withTitle: "Popular", at: 0, animated: false)
         control.insertSegment(withTitle: "Upcoming", at: 1, animated: false)
@@ -26,7 +29,6 @@ class SegmentedControlHeaderView: UICollectionReusableView {
     
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .red
         setupView()
     }
     

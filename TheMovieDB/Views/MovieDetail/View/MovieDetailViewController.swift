@@ -32,26 +32,12 @@ final class MovieDetailViewController: UICollectionViewController {
         cell.configCell(movie)
     }
     
-    private let registerInfoCell = UICollectionView.CellRegistration<UICollectionViewListCell, Movie> { cell, indexPath, movie in
-        var configuration = cell.defaultContentConfiguration()
-        configuration.text = movie.title
-        
-        configuration.image = #imageLiteral(resourceName: "MoviePlaceholder")
-        configuration.imageProperties.cornerRadius = cell.contentView.frame.height / 2
-        
-        cell.contentConfiguration = configuration
-        cell.isSelected = false
+    private let registerInfoCell = UICollectionView.CellRegistration<InfoViewCell, Movie> { cell, indexPath, movie in
+        cell.configCell(movie)
     }
     
-    private let registerCompanieCell = UICollectionView.CellRegistration<UICollectionViewListCell, ProductionCompany> { cell, indexPath, companie in
-        var configuration = cell.defaultContentConfiguration()
-        configuration.text = companie.name
-        
-        configuration.image = #imageLiteral(resourceName: "MoviePlaceholder")
-        configuration.imageProperties.cornerRadius = cell.contentView.frame.height / 2
-        
-        cell.contentConfiguration = configuration
-        cell.isSelected = false
+    private let registerCompanieCell = UICollectionView.CellRegistration<ProductionCompaniesCell, ProductionCompany> { cell, indexPath, companie in
+        cell.configCell(companie)
     }
     
     init(viewModel: MovieDetailViewModelRepresentable) {
@@ -75,18 +61,18 @@ final class MovieDetailViewController: UICollectionViewController {
             primaryAction: UIAction { [unowned self] re in
                 viewModel.movie.isFavorite = true
                 favoriteButtonItem.isEnabled = !viewModel.movie.isFavorite
+                favoriteButtonItem.image = UIImage(systemName: "heart.fill")
                 viewModel.saveToFavorite()
             })
     }()
     
     private func setUI() {
-        view.backgroundColor = .white
         title = "Details"
         collectionView.showsVerticalScrollIndicator = false
-        
+        collectionView.bounces = false
         navigationItem.rightBarButtonItem = favoriteButtonItem
         favoriteButtonItem.isEnabled = !viewModel.movie.isFavorite
-        
+        configureCollectionView()
         viewModel.fetchMovieDetail()
     }
     
@@ -101,6 +87,24 @@ final class MovieDetailViewController: UICollectionViewController {
         } receiveValue: { [unowned self] movie in
             guard let movie = movie else { return }
             applySnapshot(movie: movie)
+        }
+    }
+    
+    private func configureCollectionView() {
+        collectionView.register(HeaderView.self,
+                                forSupplementaryViewOfKind: HeaderView.reuseIdentifier,
+                                withReuseIdentifier: HeaderView.reuseIdentifier)
+        
+        dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
+            
+            guard let supplementaryView = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: HeaderView.reuseIdentifier,
+                for: indexPath) as? HeaderView else { fatalError("Cannot create header view") }
+            
+            let sectionName = Section.allCases[indexPath.section].rawValue
+            supplementaryView.config(for: sectionName)
+            return supplementaryView
         }
     }
     
@@ -135,15 +139,25 @@ final class MovieDetailViewController: UICollectionViewController {
 extension MovieDetailViewController {
     static private func generateLayout() -> UICollectionViewLayout {
         return UICollectionViewCompositionalLayout { index, _  in
-            
             let section = Section.allCases[index]
             
+            let sectionLayoutKind = Section.allCases[index]
+            let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(44))
+            let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize,
+                                                                            elementKind: HeaderView.reuseIdentifier,
+                                                                            alignment: .top)
+            
             switch section {
-                
             case .poster, .info:
-                let headerItem = NSCollectionLayoutItem(layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(1.0)))
+                let headerItem = NSCollectionLayoutItem(layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                                                           heightDimension: .fractionalHeight(1.0)))
                 
-                let headerGroup = NSCollectionLayoutGroup.horizontal(layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .fractionalHeight(0.3)), subitems: [headerItem])
+                let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                                       heightDimension: .fractionalHeight(0.4))
+                
+                let headerGroup = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [headerItem])
+                headerGroup.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0)
+                
                 
                 return NSCollectionLayoutSection(group: headerGroup)
             case .productionCompanie:
@@ -153,12 +167,14 @@ extension MovieDetailViewController {
                 let item = NSCollectionLayoutItem(layoutSize: itemSize)
                 
                 let groupSize = NSCollectionLayoutSize(
-                    widthDimension: .absolute(140),
-                    heightDimension: .absolute(100))
+                    widthDimension: .absolute(250),
+                    heightDimension: .absolute(200))
+                
                 let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitem: item, count: 1)
                 group.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
                 
                 let section = NSCollectionLayoutSection(group: group)
+                section.boundarySupplementaryItems = [sectionHeader]
                 section.orthogonalScrollingBehavior = .groupPaging
                 
                 return section

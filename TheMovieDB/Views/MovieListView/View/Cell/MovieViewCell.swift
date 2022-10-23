@@ -9,47 +9,43 @@ import UIKit
 
 final class MoviesViewCell: UICollectionViewCell {
     
+    private var shadowView: UIView = {
+        let outerView = UIView()
+        outerView.shadow(opacity: 0.5)
+        return outerView
+    }()
+    
     private var movieImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "MoviePlaceholder")
-        imageView.layer.cornerRadius = 20
-        imageView.layer.masksToBounds = true
         imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 15
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
     
     private var movieTitle: UILabel = {
         let title = UILabel()
-        title.numberOfLines = 1
-        title.font = .preferredFont(forTextStyle: .headline)
-        title.translatesAutoresizingMaskIntoConstraints = false
+        title.configText()
         return title
     }()
     
     private var dateLabel: UILabel = {
         let date = UILabel()
-        date.numberOfLines = 1
-        date.font = .boldSystemFont(ofSize: 16)
-        date.translatesAutoresizingMaskIntoConstraints = false
+        date.configText()
         return date
     }()
     
     private var ratingLabel: UILabel = {
         let rating = UILabel()
-        rating.numberOfLines = 1
-        rating.font = .boldSystemFont(ofSize: 16)
-        rating.translatesAutoresizingMaskIntoConstraints = false
-        rating.textAlignment = .right
+        rating.configText(alignment: .right)
         return rating
     }()
     
     private var descriptionLabel: UILabel = {
         let description = UILabel()
-        description.numberOfLines = 0
-        description.textAlignment = .left
-        description.font = .boldSystemFont(ofSize: 14)
-        description.translatesAutoresizingMaskIntoConstraints = false
+        description.configText(lines: 5, color: .white)
         return description
     }()
     
@@ -58,7 +54,7 @@ final class MoviesViewCell: UICollectionViewCell {
         stackView.axis = .vertical
         stackView.distribution = .fill
         stackView.alignment = .fill
-        stackView.spacing = 10
+        stackView.spacing = 5
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }()
@@ -68,6 +64,7 @@ final class MoviesViewCell: UICollectionViewCell {
         stackView.axis = .horizontal
         stackView.distribution = .fill
         stackView.alignment = .center
+        stackView.spacing = 5
         stackView.translatesAutoresizingMaskIntoConstraints = false
         return stackView
     }()
@@ -82,16 +79,22 @@ final class MoviesViewCell: UICollectionViewCell {
         super.init(coder: coder)
     }
     
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        movieImageView.image = UIImage(named: "MoviePlaceholder")
+    }
+    
     private func setUI() {
-        layer.cornerRadius = 20
-        backgroundColor = .systemCyan
-        addSubview(movieImageView)
+        backgroundColor = .backgroundList
+        addSubview(shadowView)
+        shadowView.addSubview(movieImageView)
         addSubview(stackView)
+        shadow(cornerR: 20, opacity: 0.5)
     }
     
     private func setupConstraint() {
         NSLayoutConstraint.activate([
-            movieImageView.heightAnchor.constraint(equalToConstant: 200),
+            movieImageView.heightAnchor.constraint(equalToConstant: 230),
             movieImageView.topAnchor.constraint(equalTo: topAnchor),
             movieImageView.widthAnchor.constraint(equalTo: widthAnchor),
             
@@ -105,7 +108,7 @@ final class MoviesViewCell: UICollectionViewCell {
     func configCell(_ movie: Movie) {
         movieTitle.text = movie.title
         dateLabel.text = movie.releaseDate.printFormattedDate()
-        ratingLabel.text =  "\u{2B50} \(movie.voteAverage) "
+        ratingLabel.text =  "★ \(movie.voteAverage)"
         descriptionLabel.text = movie.overview
         
         Task {

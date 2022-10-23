@@ -17,6 +17,8 @@ struct Movie: Codable, Identifiable {
     let title: String
     let voteAverage: Double
     let productionCompanies: [ProductionCompany]?
+    let popularity: Double
+    let genres: [Genre]?
     
     var isFavorite: Bool {
         get {
@@ -36,6 +38,8 @@ struct Movie: Codable, Identifiable {
         case title
         case voteAverage = "vote_average"
         case productionCompanies = "production_companies"
+        case popularity
+        case genres
     }
 }
 

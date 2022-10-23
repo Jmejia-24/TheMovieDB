@@ -33,7 +33,7 @@ protocol MovieDetailStore {
 }
 
 protocol ProfileStore {
-    func getMovieFavorite() -> Future<[Movie], APIError>
+    func getMovieFavorite(accountId: Int, sessionId: String, with offset: Int) -> Future<PaginatedResponse<Movie>, APIError>
 }
 
 final class APIManager {
@@ -138,7 +138,12 @@ extension APIManager: MovieDetailStore {
 }
 
 extension APIManager: ProfileStore {
-    func getMovieFavorite() -> Future<[Movie], APIError> {
-        return request(for: "")
+    func getMovieFavorite(accountId: Int, sessionId: String, with offset: Int) -> Future<PaginatedResponse<Movie>, APIError> {
+        let path = "account/\(accountId)/favorite/movies"
+        let queryItems = [URLQueryItem(name: "session_id", value: sessionId),
+                          URLQueryItem(name: "sort_by", value: "created_at.asc"),
+                          URLQueryItem(name: "page", value: "\(offset)")]
+        
+        return request(for: path, with: queryItems)
     }
 }

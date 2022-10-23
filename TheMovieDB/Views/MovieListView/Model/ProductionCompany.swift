@@ -10,7 +10,8 @@ import Foundation
 struct ProductionCompany: Codable, Hashable {
     let id: Int?
     let logoPath: String?
-    let name, originCountry: String?
+    let name: String?
+    let originCountry: String?
     
     enum CodingKeys: String, CodingKey {
         case id

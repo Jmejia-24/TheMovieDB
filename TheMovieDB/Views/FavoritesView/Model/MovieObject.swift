@@ -35,7 +35,9 @@ struct MovieObject: Hashable {
                           releaseDate: releaseDate,
                           title: title,
                           voteAverage: voteAverage,
-                          productionCompanies: nil)
+                          productionCompanies: nil,
+                          popularity: 0.0,
+                          genres: [])
         }
     }
     

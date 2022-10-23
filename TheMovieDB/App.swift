@@ -14,7 +14,7 @@ final class App {
 
 extension App: Coordinator {
     func start() {
-        process(route: .showMainScreen)
+        process(route: .showLogin)
     }
 }
 
@@ -29,7 +29,6 @@ extension App: AppRouter {
     }
     
     func process(route: AppTransition) {
-        print("Processing route: \(route)")
         let coordinator = route.hasState ? coordinatorRegister[route] : route.coordinatorFor(router: self)
         coordinator?.start()
     }

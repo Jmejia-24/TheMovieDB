@@ -12,7 +12,8 @@ final class HeaderView: UICollectionReusableView {
     private var label: UILabel = {
         let label = UILabel()
         label.numberOfLines = 1
-        label.font = .preferredFont(forTextStyle: .title3)
+        label.textColor = .white
+        label.font = .preferredFont(forTextStyle: .title2)
         label.translatesAutoresizingMaskIntoConstraints = false
         label.adjustsFontForContentSizeCategory = true
         return label
@@ -29,7 +30,6 @@ final class HeaderView: UICollectionReusableView {
     }
     
     private func setUI() {
-        backgroundColor = .systemBackground
         addSubview(label)
     }
     

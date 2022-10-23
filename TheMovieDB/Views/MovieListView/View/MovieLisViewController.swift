@@ -47,7 +47,7 @@ final class MovieLisViewController: UICollectionViewController {
             item.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12)
             
             let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                                   heightDimension: .absolute(390))
+                                                   heightDimension: .absolute(420))
             
             let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 2)
             
@@ -94,7 +94,7 @@ final class MovieLisViewController: UICollectionViewController {
     
     private func setBarItem() {
         let settingButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "gear"),
+            image: UIImage(systemName: "list.bullet"),
             primaryAction: UIAction { [unowned self] _ in
                 showSettingOptions()
             })
@@ -110,7 +110,6 @@ final class MovieLisViewController: UICollectionViewController {
     
     private func setUI() {
         navigationItem.setHidesBackButton(true, animated: false)
-        view.backgroundColor = .white
         title = "Movies"
         
         collectionView.bounces = false
@@ -126,7 +125,7 @@ final class MovieLisViewController: UICollectionViewController {
             case .finished:
                 print("Received completion in VC", completion)
             case .failure(let error):
-                presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
+                presentErrorAlert(for: error.errorCode.rawValue, with: error.message)
             }
         } receiveValue: { [unowned self] movies in
             applySnapshot(movies: movies)

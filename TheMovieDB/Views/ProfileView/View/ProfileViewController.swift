@@ -11,7 +11,7 @@ final class ProfileViewController: UICollectionViewController {
     
     private enum Section: String, CaseIterable {
         case profile = "Profile"
-        case favorite = "Favorite Shows"
+        case favorite = "Favorite Movies"
     }
     
     enum Row: Hashable {
@@ -27,6 +27,8 @@ final class ProfileViewController: UICollectionViewController {
     
     private let registerProfileCell = UICollectionView.CellRegistration<UICollectionViewListCell, Profile> { cell, indexPath, profile in
         var configuration = cell.defaultContentConfiguration()
+        configuration.textProperties.color = .white
+        configuration.textProperties.font = .boldSystemFont(ofSize: 30)
         configuration.text = profile.username
         
         Task {
@@ -38,6 +40,7 @@ final class ProfileViewController: UICollectionViewController {
         }
         
         cell.contentConfiguration = configuration
+        cell.contentView.backgroundColor = .backgroundView
         cell.isSelected = false
     }
     
@@ -62,13 +65,12 @@ final class ProfileViewController: UICollectionViewController {
     }
     
     private func setUI() {
-        collectionView.backgroundColor = .white
         collectionView.bounces = false
         collectionView.showsVerticalScrollIndicator = false
         collectionView.prefetchDataSource = self
         
         viewModel.getAccountDetails()
-        viewModel.loadFavoriteMovies(0)
+        viewModel.loadFavoriteMovies(1)
     }
     
     private func bindUI() {
@@ -77,7 +79,7 @@ final class ProfileViewController: UICollectionViewController {
             case .finished:
                 print("Received completion in VC", completion)
             case .failure(let error):
-                print(error)
+                self.presentErrorAlert(for: error.errorCode.rawValue, with: (error.message))
             }
         } receiveValue: { [unowned self] favorites in
             applySnapshot(favorites: favorites)
@@ -85,7 +87,9 @@ final class ProfileViewController: UICollectionViewController {
     }
     
     private func configureCollectionView() {
-        collectionView.register(header: HeaderView.self)
+        collectionView.register(HeaderView.self,
+                                forSupplementaryViewOfKind: HeaderView.reuseIdentifier,
+                                withReuseIdentifier: HeaderView.reuseIdentifier)
         
         dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
             
@@ -125,6 +129,10 @@ final class ProfileViewController: UICollectionViewController {
         
         dataSource.apply(snapshot)
     }
+    
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        viewModel.didTapItem(index: indexPath)
+    }
 }
 
 extension ProfileViewController: UICollectionViewDataSourcePrefetching {
@@ -155,7 +163,6 @@ extension ProfileViewController {
                 
                 let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitem: item, count: 1)
                 let section = NSCollectionLayoutSection(group: group)
-                section.boundarySupplementaryItems = [sectionHeader]
                 
                 return section
             case .favorite:

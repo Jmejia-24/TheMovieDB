@@ -10,7 +10,7 @@ import CoreData
 
 protocol FavoriteViewModelRepresentable {
     func loadFavoriteMovies(_ offset: Int)
-    func deleteMovie(nsObject: NSManagedObject)
+    func deleteMovie(movie: MovieObject)
     var favoritesSubject: PassthroughSubject<[MovieObject], StorageFailure> { get }
 }
 
@@ -55,7 +55,9 @@ extension FavoriteViewModel: FavoriteViewModelRepresentable {
             .store(in: &cancellables)
     }
     
-    func deleteMovie(nsObject: NSManagedObject) {
+    func deleteMovie(movie: MovieObject) {
+        UserDefaultsManager.shared.setIsMovieFavorite(value: false, forKey: "\(movie.movie?.identifier ?? 0)-favorite")
+        
         let completion = { [unowned self] (completion: Subscribers.Completion<StorageFailure>) -> Void in
             switch  completion {
             case .finished:
@@ -65,7 +67,7 @@ extension FavoriteViewModel: FavoriteViewModelRepresentable {
             }
         }
         
-        store.delete(movieManagedObject: nsObject)
+        store.delete(movieManagedObject: movie.productNSManagedObject)
             .sink(receiveCompletion: completion, receiveValue: { (response: Bool) -> Void in })
             .store(in: &cancellables)
     }

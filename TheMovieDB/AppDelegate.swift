@@ -18,6 +18,9 @@ import UIKit
         window = UIWindow(frame: UIScreen.main.bounds)
         window?.rootViewController = app.navigationController
         window?.makeKeyAndVisible()
+        
+        AppStyle.configureAppearance()
+        
         app.start()
         return true
     }

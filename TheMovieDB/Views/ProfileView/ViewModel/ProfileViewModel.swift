@@ -13,6 +13,7 @@ protocol ProfileViewModelRepresentable {
     func getAccountDetails()
     func loadFavoriteMovies(_ offset: Int)
     func prefetchData(for indexPaths: [IndexPath])
+    func didTapItem(index: IndexPath)
     var profileItem: Profile? { get }
     var favoritesSubject: PassthroughSubject<[Movie], APIError> { get }
 }
@@ -47,9 +48,12 @@ extension ProfileViewModel: ProfileViewModelRepresentable {
     }
     
     func loadFavoriteMovies(_ offset: Int) {
-        let recievedData = { (response: [Movie]) -> Void in
+        guard let sessionId = AuthorizationDataManager.shared.getAuthorizationSession,
+        let accountId = profileItem?.id else { return }
+        
+        let recievedData = { (response: PaginatedResponse<Movie>)  -> Void in
             DispatchQueue.main.async { [unowned self] in
-                fetchedFavorites.append(contentsOf: response)
+                fetchedFavorites.append(contentsOf: response.results)
             }
         }
         
@@ -62,7 +66,7 @@ extension ProfileViewModel: ProfileViewModelRepresentable {
             }
         }
         
-        store.getMovieFavorite()
+        store.getMovieFavorite(accountId: accountId, sessionId: sessionId, with: offset)
             .sink(receiveCompletion: completion, receiveValue: recievedData)
             .store(in: &cancellables)
     }
@@ -74,5 +78,10 @@ extension ProfileViewModel: ProfileViewModelRepresentable {
         if index > movieAlreadyLoaded - 10 {
             loadFavoriteMovies(movieAlreadyLoaded)
         }
+    }
+    
+    func didTapItem(index: IndexPath) {
+        let movie = fetchedFavorites[index.row]
+        router?.process(route: .showDetail(model: movie))
     }
 }

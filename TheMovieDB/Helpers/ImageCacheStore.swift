@@ -19,8 +19,8 @@ final class ImageCacheStore {
         cache.totalCostLimit = 52428800 // 50MB
     }
 
-    func getCacheImage(for imageURL: String?, width: Int = 500) async -> UIImage {
-        let posterBaseURL = "https://image.tmdb.org/t/p/w\(width)"
+    func getCacheImage(for imageURL: String?) async -> UIImage {
+        let posterBaseURL = "https://image.tmdb.org/t/p/w500"
         
         guard let imageURL = imageURL else {
             return placeHolder
