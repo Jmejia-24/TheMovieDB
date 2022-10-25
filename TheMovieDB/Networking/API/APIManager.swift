@@ -38,7 +38,7 @@ protocol ProfileStore {
 
 final class APIManager {
     
-    private func request<T: Codable>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, APIError> where T : Codable {
+    private func request<T>(for path: String, with queryItems: [URLQueryItem]? = nil, httpMethod: HttpMethod = .get) -> Future<T, APIError> where T : Codable {
         var components = URLComponents()
         components.scheme = "https"
         components.host = "api.themoviedb.org"

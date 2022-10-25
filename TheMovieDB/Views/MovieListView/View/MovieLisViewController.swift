@@ -150,7 +150,7 @@ final class MovieLisViewController: UICollectionViewController {
         cell.configCell(movie)
     }
     
-    private lazy var dataSource: DataSource = { [unowned self] in
+    private lazy var dataSource: DataSource = {
         let dataSource = DataSource(collectionView: collectionView) { collectionView, indexPath, item ->  UICollectionViewCell in
             collectionView.dequeueConfiguredReusableCell(using: self.registerMovieCell, for: indexPath, item: item)
         }

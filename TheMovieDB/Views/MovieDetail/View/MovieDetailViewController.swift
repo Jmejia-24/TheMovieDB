@@ -141,7 +141,6 @@ extension MovieDetailViewController {
         return UICollectionViewCompositionalLayout { index, _  in
             let section = Section.allCases[index]
             
-            let sectionLayoutKind = Section.allCases[index]
             let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .estimated(44))
             let sectionHeader = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize,
                                                                             elementKind: HeaderView.reuseIdentifier,
